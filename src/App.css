@@ -24,6 +24,10 @@ nav {
   font-weight: 500;
 }
 
+.logo {
+  height: 5.25rem;
+}
+
 .login {
   display: flex;
 }

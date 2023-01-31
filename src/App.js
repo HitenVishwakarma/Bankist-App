@@ -1,10 +1,12 @@
 import "./App.css";
+import logo from "./images/logo.png";
 
 function App() {
   return (
     <div className="App">
       <nav>
         <p className="welcome">Log in to get started</p>
+        <img src={logo} alt="Logo" className="logo" />
         <form className="login">
           <input
             type="text"
