@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logo from "./images/logo.png";
 
@@ -33,23 +33,25 @@ const account4 = {
 const accounts = [account1, account2, account3, account4];
 
 function App() {
-  // const [acc1, setAcc1] = useState(account1);
-  // const [acc2, setAcc2] = useState(account2);
-  // const [acc3, setAcc3] = useState(account3);
-  // const [acc4, setAcc4] = useState(account4);
   const [incomes, setIncomes] = useState("0000€");
   const [outcomes, setOutcomes] = useState("0000€");
   const [interest, setInterest] = useState("0000€");
-  const [userName, setUserName] = useState([]);
-  const [userPwd, setAllUserPwd] = useState([]);
-  const [uid, setUid] = useState("");
-  const [pin, setPin] = useState("");
+  // const [userNameRef, setUserName] = useState("");
+  // const [userPwdRef, setUserPwd] = useState("");
   const [unIsValid, setUnIsValid] = useState(false);
   const [pinIsValid, setPinIsValid] = useState(false);
+  const [message, setMessage] = useState("Log in to get started");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUserAccount, setcurrentUserAccount] = useState({});
+
+  const userNameRef = useRef();
+  const userPwdRef = useRef();
 
   useEffect(() => {
-    calcDisplaySummary(account1.movements);
-  }, []);
+    if (isLoggedIn) {
+      calcDisplaySummary(currentUserAccount.movements);
+    }
+  }, [currentUserAccount]);
 
   useEffect(() => {
     const createUserNames = (accs) => {
@@ -63,47 +65,7 @@ function App() {
       );
     };
     createUserNames(accounts);
-    const allUserName = accounts.map((un) => un.userName);
-    const allUserPwd = accounts.map((id) => id.pin);
-    setUserName(allUserName);
-    setAllUserPwd(allUserPwd);
-    console.log("un:", allUserName, allUserPwd);
   }, []);
-
-  const userLoginhandler = (e) => {
-    setUid(e.target.value);
-  };
-
-  const userPwdHandler = (e) => {
-    setPin(e.target.value);
-  };
-
-  const validateUserNameHandler = () => {
-    // const validateUserName = userName.filter(
-    //   (data) => userName.indexOf(uid) !== -1
-    // );
-    console.log(
-      "login",
-      userName.map((data) => data.indexOf(uid) !== -1)
-    );
-    // setUnIsValid(validateUserName);
-  };
-
-  const ValidateUserPwdHandler = () => {
-    const validateUserName = userName.filter((data) =>
-      data === pin ? true : false
-    );
-    setPinIsValid(validateUserName);
-  };
-
-  const formSubmitHandler = (e) => {
-    e.preventDefault();
-    if (unIsValid) {
-      console.log("login Successful!!");
-    } else {
-      console.log("login failed!!");
-    }
-  };
 
   const displayMovements = (movements) =>
     movements.map((mov, i) => {
@@ -118,17 +80,10 @@ function App() {
       );
     });
 
-  // const deposits = account1.movements.filter((mov) => mov > 0);
-  // console.log("deposits", deposits);
-
-  // const withdrawals = account1.movements.filter((mov) => mov < 0);
-  // console.log("withdrawals", withdrawals);
-
   const calcBalance = (movements) => {
     const balance = movements.reduce((acc, mov) => acc + mov, 0);
     return <p className="balance__value">{balance}€</p>;
   };
-  // const totalCalcBalance = calcBalance(account1.movements);
 
   const calcDisplaySummary = (movements) => {
     const calcIncomes = movements
@@ -152,34 +107,47 @@ function App() {
     setInterest(calcInterest);
   };
 
+  const formSubmitHandler = (e) => {
+    e.preventDefault();
+    const userName = userNameRef.current.value;
+    const userPwd = userPwdRef.current.value;
+    const validateUser = accounts.find((un) => un.userName === userName);
+    console.log("validateUser", validateUser);
+    setcurrentUserAccount(validateUser);
+    if (validateUser?.pin === Number(userPwd)) {
+      // Display UI and Message
+      setMessage(`Welcome back, ${validateUser.owner}`);
+      setIsLoggedIn(true);
+    }
+    userNameRef.current.value = "";
+    userPwdRef.current.value = "";
+    userPwdRef.current.blur();
+  };
+
   return (
     <div className="App">
       <nav>
-        <p className="welcome">Log in to get started</p>
+        <p className="welcome">{message}</p>
         <img src={logo} alt="Logo" className="logo" />
         <form className="login" onSubmit={formSubmitHandler}>
           <input
             type="text"
             placeholder="user"
             className="login__input login__input--user"
-            onChange={userLoginhandler}
-            onBlur={validateUserNameHandler}
-            value={uid}
+            ref={userNameRef}
           />
           <input
             type="text"
             placeholder="PIN"
             maxlength="4"
             className="login__input login__input--pin"
-            onChange={userPwdHandler}
-            onBlur={ValidateUserPwdHandler}
-            value={pin}
+            ref={userPwdRef}
           />
           <button className="login__btn">&rarr;</button>
         </form>
       </nav>
 
-      <div className="main-app">
+      <div className={isLoggedIn ? "main-app-show" : "main-app"}>
         <div className="balance">
           <div>
             <p className="balance__label">Current balance</p>
@@ -187,10 +155,13 @@ function App() {
               As of <span className="date">05/03/2037</span>
             </p>
           </div>
-          {calcBalance(account1.movements)}
-          {/* <p className="balance__value">{totalCalcBalance}€</p> */}
+          {isLoggedIn && calcBalance(currentUserAccount.movements)}
         </div>
-        <div className="movements">{displayMovements(account1.movements)}</div>
+        {isLoggedIn && (
+          <div className="movements">
+            {displayMovements(currentUserAccount.movements)}
+          </div>
+        )}
         <div className="summary">
           <p className="summary__label">In</p>
           <p className="summary__value summary__value--in">{`${incomes}€`}</p>
