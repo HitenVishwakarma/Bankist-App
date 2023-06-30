@@ -36,20 +36,18 @@ function App() {
   const [incomes, setIncomes] = useState("0000€");
   const [outcomes, setOutcomes] = useState("0000€");
   const [interest, setInterest] = useState("0000€");
-  // const [userNameRef, setUserName] = useState("");
-  // const [userPwdRef, setUserPwd] = useState("");
-  const [unIsValid, setUnIsValid] = useState(false);
-  const [pinIsValid, setPinIsValid] = useState(false);
   const [message, setMessage] = useState("Log in to get started");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserAccount, setcurrentUserAccount] = useState({});
-
+  const [totalBalance, setTotalBalance] = useState();
   const userNameRef = useRef();
   const userPwdRef = useRef();
+  const transferAmountRef = useRef();
+  const transferToRef = useRef();
 
   useEffect(() => {
     if (isLoggedIn) {
-      calcDisplaySummary(currentUserAccount.movements);
+      calcDisplaySummary(currentUserAccount);
     }
   }, [currentUserAccount]);
 
@@ -67,8 +65,8 @@ function App() {
     createUserNames(accounts);
   }, []);
 
-  const displayMovements = (movements) =>
-    movements.map((mov, i) => {
+  const displayMovements = (acc) =>
+    acc.movements.map((mov, i) => {
       const type = mov > 0 ? "deposit" : "withdrawal";
       return (
         <div className="movements__row">
@@ -80,27 +78,27 @@ function App() {
       );
     });
 
-  const calcBalance = (movements) => {
-    const balance = movements.reduce((acc, mov) => acc + mov, 0);
+  const calcBalance = (acc) => {
+    const balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
+    acc.balance = balance;
     return <p className="balance__value">{balance}€</p>;
   };
 
-  const calcDisplaySummary = (movements) => {
-    const calcIncomes = movements
+  const calcDisplaySummary = (acc) => {
+    const calcIncomes = acc.movements
       .filter((mov) => mov > 0)
       .reduce((acc, mov) => acc + mov, 0);
     setIncomes(calcIncomes);
 
     const calcOutcomes = Math.abs(
-      movements.filter((mov) => mov < 0).reduce((acc, mov) => acc + mov, 0)
+      acc.movements.filter((mov) => mov < 0).reduce((acc, mov) => acc + mov, 0)
     );
     setOutcomes(calcOutcomes);
 
-    const calcInterest = movements
+    const calcInterest = acc.movements
       .filter((mov) => mov > 0)
-      .map((dep) => (dep * 1.2) / 100)
+      .map((dep) => (dep * acc.interestRate) / 100)
       .filter((int, i, arr) => {
-        console.log(arr);
         return int >= 1;
       })
       .reduce((acc, int) => acc + int, 0);
@@ -108,11 +106,10 @@ function App() {
   };
 
   const formSubmitHandler = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     const userName = userNameRef.current.value;
     const userPwd = userPwdRef.current.value;
     const validateUser = accounts.find((un) => un.userName === userName);
-    console.log("validateUser", validateUser);
     setcurrentUserAccount(validateUser);
     if (validateUser?.pin === Number(userPwd)) {
       // Display UI and Message
@@ -122,6 +119,29 @@ function App() {
     userNameRef.current.value = "";
     userPwdRef.current.value = "";
     userPwdRef.current.blur();
+  };
+
+  const transferAmountHandler = (e) => {
+    e?.preventDefault();
+    const receiverName = transferToRef.current.value;
+    const amount = Number(transferAmountRef.current.value);
+    const receiverAcc = accounts.find((data) => data.userName === receiverName);
+    if (
+      amount > 0 &&
+      receiverAcc &&
+      receiverAcc?.userName !== currentUserAccount.userName &&
+      currentUserAccount.balance >= amount
+    ) {
+      currentUserAccount.movements.push(-amount);
+      receiverAcc.movements.push(amount);
+    }
+    calcBalance(currentUserAccount);
+    calcDisplaySummary(currentUserAccount);
+    displayMovements(currentUserAccount);
+
+    transferToRef.current.value = "";
+    transferAmountRef.current.value = "";
+    transferAmountRef.current.blur();
   };
 
   return (
@@ -147,7 +167,7 @@ function App() {
         </form>
       </nav>
 
-      <div className={isLoggedIn ? "main-app-show" : "main-app"}>
+      <div className={isLoggedIn ? "main-app opacity" : "main-app"}>
         <div className="balance">
           <div>
             <p className="balance__label">Current balance</p>
@@ -155,11 +175,11 @@ function App() {
               As of <span className="date">05/03/2037</span>
             </p>
           </div>
-          {isLoggedIn && calcBalance(currentUserAccount.movements)}
+          {isLoggedIn && calcBalance(currentUserAccount)}
         </div>
         {isLoggedIn && (
           <div className="movements">
-            {displayMovements(currentUserAccount.movements)}
+            {displayMovements(currentUserAccount)}
           </div>
         )}
         <div className="summary">
@@ -173,13 +193,28 @@ function App() {
         </div>
         <div className="operation operation--transfer">
           <h2>Transfer money</h2>
-          <form className="form form--transfer">
-            <input type="text" className="form__input form__input--to" />
-            <input type="number" className="form__input form__input--amount" />
-            <button className="form__btn form__btn--transfer">&rarr;</button>
-            <label className="form__label">Transfer to</label>
-            <label className="form__label">Amount</label>
-          </form>
+          {isLoggedIn && (
+            <form className="form form--transfer">
+              <input
+                type="text"
+                className="form__input form__input--to"
+                ref={transferToRef}
+              />
+              <input
+                type="number"
+                className="form__input form__input--amount"
+                ref={transferAmountRef}
+              />
+              <button
+                className="form__btn form__btn--transfer"
+                onClick={transferAmountHandler}
+              >
+                &rarr;
+              </button>
+              <label className="form__label">Transfer to</label>
+              <label className="form__label">Amount</label>
+            </form>
+          )}
         </div>
         <div className="operation operation--loan">
           <h2>Request loan</h2>
