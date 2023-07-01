@@ -39,7 +39,6 @@ function App() {
   const [message, setMessage] = useState("Log in to get started");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserAccount, setcurrentUserAccount] = useState({});
-  const [totalBalance, setTotalBalance] = useState();
   const userNameRef = useRef();
   const userPwdRef = useRef();
   const userName = useRef();
@@ -47,6 +46,8 @@ function App() {
   const loanAmountRef = useRef();
   const transferAmountRef = useRef();
   const transferToRef = useRef();
+  const [isSort, setIsSort] = useState(false);
+  const [time, setTime] = useState(0);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -68,18 +69,22 @@ function App() {
     createUserNames(accounts);
   }, []);
 
-  const displayMovements = (acc) =>
-    acc.movements.map((mov, i) => {
+  const displayMovements = (acc) => {
+    const movs = isSort
+      ? [...acc.movements].sort((a, b) => a - b)
+      : acc.movements;
+    return movs.map((mov, i) => {
       const type = mov > 0 ? "deposit" : "withdrawal";
       return (
         <div className="movements__row">
           <div className={`movements__type movements__type--${type}`}>
             {`${i + 1} ${type}`}
           </div>
-          <div className="movements__value">{mov}</div>
+          <div className="movements__value">{mov}€</div>
         </div>
       );
     });
+  };
 
   const calcBalance = (acc) => {
     const balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
@@ -177,6 +182,32 @@ function App() {
     }
   };
 
+  const sorting = (e) => {
+    e?.preventDefault();
+    setIsSort(!isSort);
+    displayMovements(currentUserAccount);
+  };
+
+  useEffect(() => {
+    let start = null;
+    start = setInterval(() => {
+      setTime((second) => second + 10);
+    }, 10);
+    return () => clearInterval(start);
+  }, [time]);
+
+  const timer = () => {
+    return (
+      <p className="logout-timer">
+        You will be logged out in{" "}
+        <span className="logout-timer">
+          <span>{("0" + Math.floor((time / 60000) % 60)).slice(-2)}m:</span>
+          <span>{("0" + Math.floor((time / 1000) % 60)).slice(-2)}s:</span>
+        </span>
+      </p>
+    );
+  };
+
   return (
     <div className="App">
       <nav>
@@ -222,7 +253,9 @@ function App() {
           <p className="summary__value summary__value--out">{`${outcomes}€`}</p>
           <p className="summary__label">Interest</p>
           <p className="summary__value summary__value--interest">{`${interest}€`}</p>
-          <button className="btn--sort">&downarrow; SORT</button>
+          <button className="btn--sort" onClick={(e) => sorting(e)}>
+            &darr; SORT
+          </button>
         </div>
         <div className="operation operation--transfer">
           <h2>Transfer money</h2>
@@ -290,9 +323,7 @@ function App() {
             <label className="form__label">Confirm PIN</label>
           </form>
         </div>
-        <p className="logout-timer">
-          You will be logged out in <span className="timer">05:00</span>
-        </p>
+        {timer()}
       </div>
     </div>
   );
