@@ -42,6 +42,9 @@ function App() {
   const [totalBalance, setTotalBalance] = useState();
   const userNameRef = useRef();
   const userPwdRef = useRef();
+  const userName = useRef();
+  const userPwd = useRef();
+  const loanAmountRef = useRef();
   const transferAmountRef = useRef();
   const transferToRef = useRef();
 
@@ -102,7 +105,7 @@ function App() {
         return int >= 1;
       })
       .reduce((acc, int) => acc + int, 0);
-    setInterest(calcInterest);
+    setInterest(calcInterest.toFixed(3));
   };
 
   const formSubmitHandler = (e) => {
@@ -139,9 +142,39 @@ function App() {
     calcDisplaySummary(currentUserAccount);
     displayMovements(currentUserAccount);
 
-    transferToRef.current.value = "";
-    transferAmountRef.current.value = "";
+    transferToRef.current.value = transferAmountRef.current.value = "";
+    // transferAmountRef.current.value = "";
     transferAmountRef.current.blur();
+  };
+
+  const requestLoanHandler = (e) => {
+    e?.preventDefault();
+    const loanAmount = Number(loanAmountRef.current.value);
+    if (
+      loanAmount > 0 &&
+      currentUserAccount.movements.some((amount) => amount >= loanAmount * 0.1)
+    ) {
+      currentUserAccount.movements.push(loanAmount);
+    }
+    calcBalance(currentUserAccount);
+    calcDisplaySummary(currentUserAccount);
+    displayMovements(currentUserAccount);
+    loanAmountRef.current.value = "";
+  };
+
+  const closeAccountHandler = (e) => {
+    e?.preventDefault();
+    const uName = userName.current.value;
+    const uPwd = Number(userPwd.current.value);
+    if (
+      uName === currentUserAccount.userName &&
+      uPwd === currentUserAccount.pin
+    ) {
+      const index = accounts.findIndex((acc) => acc.userName === uName);
+      accounts.splice(index, 1);
+      setMessage("Login in to get started");
+      setIsLoggedIn(false);
+    }
   };
 
   return (
@@ -207,7 +240,7 @@ function App() {
               />
               <button
                 className="form__btn form__btn--transfer"
-                onClick={transferAmountHandler}
+                onClick={(e) => transferAmountHandler(e)}
               >
                 &rarr;
               </button>
@@ -222,21 +255,37 @@ function App() {
             <input
               type="number"
               className="form__input form__input--loan-amount"
+              ref={loanAmountRef}
             />
-            <button className="form__btn form__btn--loan">&rarr;</button>
+            <button
+              className="form__btn form__btn--loan"
+              onClick={(e) => requestLoanHandler(e)}
+            >
+              &rarr;
+            </button>
             <label className="form__label form__label--loan">Amount</label>
           </form>
         </div>
         <div className="operation operation--close">
           <h2>Close account</h2>
           <form className="form form--close">
-            <input type="text" className="form__input form__input--user" />
+            <input
+              type="text"
+              className="form__input form__input--user"
+              ref={userName}
+            />
             <input
               type="password"
               maxlength="6"
               className="form__input form__input--pin"
+              ref={userPwd}
             />
-            <button className="form__btn form__btn--close">&rarr;</button>
+            <button
+              className="form__btn form__btn--close"
+              onClick={(e) => closeAccountHandler(e)}
+            >
+              &rarr;
+            </button>
             <label className="form__label">Confirm user</label>
             <label className="form__label">Confirm PIN</label>
           </form>
