@@ -8,6 +8,16 @@ const account1 = {
   movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
   interestRate: 1.2, // %
   pin: 1111,
+  movementsDates: [
+    "2019-11-18T21:31:17.178Z",
+    "2019-12-23T07:42:02.383Z",
+    "2020-01-28T09:15:04.904Z",
+    "2020-04-01T10:17:24.185Z",
+    "2020-05-08T14:11:59.604Z",
+    "2020-07-26T17:01:17.194Z",
+    "2020-07-28T23:36:17.929Z",
+    "2020-08-01T10:51:36.790Z",
+  ],
 };
 
 const account2 = {
@@ -15,6 +25,16 @@ const account2 = {
   movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
   interestRate: 1.5,
   pin: 2222,
+  movementsDates: [
+    "2019-11-01T13:15:33.035Z",
+    "2019-11-30T09:48:16.867Z",
+    "2019-12-25T06:04:23.907Z",
+    "2020-01-25T14:18:46.235Z",
+    "2020-02-05T16:33:06.386Z",
+    "2020-04-10T14:43:26.374Z",
+    "2020-06-25T18:49:59.371Z",
+    "2020-07-26T12:01:20.894Z",
+  ],
 };
 
 const account3 = {
@@ -48,6 +68,7 @@ function App() {
   const transferToRef = useRef();
   const [isSort, setIsSort] = useState(false);
   const [time, setTime] = useState(0);
+  const [changeColor, setChangeColor] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -75,12 +96,27 @@ function App() {
       : acc.movements;
     return movs.map((mov, i) => {
       const type = mov > 0 ? "deposit" : "withdrawal";
+
+      // Display date
+      const now = new Date(acc.movementsDates[i]);
+      const day = `${now.getDay()}`.padStart(2, 0);
+      const month = `${now.getMonth() + 1}`.padStart(2, 0);
+      const year = now.getFullYear();
+      const displayDate = `${day}/${month}/${year}`;
+
       return (
-        <div className="movements__row">
+        <div
+          className={
+            changeColor && i % 2 === 0
+              ? "movements__row backgroundColor"
+              : "movements__row"
+          }
+        >
           <div className={`movements__type movements__type--${type}`}>
             {`${i + 1} ${type}`}
           </div>
-          <div className="movements__value">{mov}€</div>
+          <div className="movements__date">{displayDate}</div>
+          <div className="movements__value">{mov.toFixed(2)}€</div>
         </div>
       );
     });
@@ -89,19 +125,28 @@ function App() {
   const calcBalance = (acc) => {
     const balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
     acc.balance = balance;
-    return <p className="balance__value">{balance}€</p>;
+    return (
+      <p
+        className="balance__value"
+        onClick={() => {
+          setChangeColor(!changeColor);
+        }}
+      >
+        {balance.toFixed(2)}€
+      </p>
+    );
   };
 
   const calcDisplaySummary = (acc) => {
     const calcIncomes = acc.movements
       .filter((mov) => mov > 0)
       .reduce((acc, mov) => acc + mov, 0);
-    setIncomes(calcIncomes);
+    setIncomes(calcIncomes.toFixed(2));
 
     const calcOutcomes = Math.abs(
       acc.movements.filter((mov) => mov < 0).reduce((acc, mov) => acc + mov, 0)
     );
-    setOutcomes(calcOutcomes);
+    setOutcomes(calcOutcomes.toFixed(2));
 
     const calcInterest = acc.movements
       .filter((mov) => mov > 0)
@@ -110,8 +155,13 @@ function App() {
         return int >= 1;
       })
       .reduce((acc, int) => acc + int, 0);
-    setInterest(calcInterest.toFixed(3));
+    setInterest(calcInterest.toFixed(2));
   };
+
+  // useEffect(() => {
+  //   setcurrentUserAccount(account1);
+  //   setIsLoggedIn(true);
+  // }, []);
 
   const formSubmitHandler = (e) => {
     e?.preventDefault();
@@ -142,6 +192,10 @@ function App() {
     ) {
       currentUserAccount.movements.push(-amount);
       receiverAcc.movements.push(amount);
+
+      //Add Transfer amount date
+      currentUserAccount.movementsDates.push(new Date().toISOString());
+      receiverAcc.movementsDates.push(new Date().toISOString);
     }
     calcBalance(currentUserAccount);
     calcDisplaySummary(currentUserAccount);
@@ -154,13 +208,17 @@ function App() {
 
   const requestLoanHandler = (e) => {
     e?.preventDefault();
-    const loanAmount = Number(loanAmountRef.current.value);
+    const loanAmount = Math.floor(loanAmountRef.current.value);
     if (
       loanAmount > 0 &&
       currentUserAccount.movements.some((amount) => amount >= loanAmount * 0.1)
     ) {
       currentUserAccount.movements.push(loanAmount);
+
+      //Add loan date
+      currentUserAccount.movementsDates.push(new Date().toISOString());
     }
+    console.log(currentUserAccount);
     calcBalance(currentUserAccount);
     calcDisplaySummary(currentUserAccount);
     displayMovements(currentUserAccount);
@@ -196,6 +254,13 @@ function App() {
     return () => clearInterval(start);
   }, [time]);
 
+  useEffect(() => {
+    const timeLimit = 10;
+    if (time >= timeLimit) {
+      setTime(0);
+    }
+  }, [time]);
+
   const timer = () => {
     return (
       <p className="logout-timer">
@@ -206,6 +271,17 @@ function App() {
         </span>
       </p>
     );
+  };
+
+  const dateHandler = () => {
+    const now = new Date();
+    const day = `${now.getDay()}`.padStart(2, 0);
+    const month = `${now.getMonth() + 1}`.padStart(2, 0);
+    const year = now.getFullYear();
+    const hour = now.getHours();
+    const min = now.getMinutes();
+    const date = `${day}/${month}/${year}, ${hour}:${min}`;
+    return <span className="balance__date">{date}</span>;
   };
 
   return (
@@ -235,9 +311,7 @@ function App() {
         <div className="balance">
           <div>
             <p className="balance__label">Current balance</p>
-            <p className="balance__date">
-              As of <span className="date">05/03/2037</span>
-            </p>
+            <p className="balance__date">As of {dateHandler()}</p>
           </div>
           {isLoggedIn && calcBalance(currentUserAccount)}
         </div>
