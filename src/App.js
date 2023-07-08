@@ -9,9 +9,9 @@ const account1 = {
   interestRate: 1.2, // %
   pin: 1111,
   movementsDates: [
-    "2019-11-18T21:31:17.178Z",
-    "2019-12-23T07:42:02.383Z",
-    "2020-01-28T09:15:04.904Z",
+    "2023-07-06T21:31:17.178Z",
+    "2023-07-05T07:42:02.383Z",
+    "2023-07-01T09:15:04.904Z",
     "2020-04-01T10:17:24.185Z",
     "2020-05-08T14:11:59.604Z",
     "2020-07-26T17:01:17.194Z",
@@ -90,6 +90,24 @@ function App() {
     createUserNames(accounts);
   }, []);
 
+  const formateDate = (date) => {
+    const calcDaysPassed = (date1, date2) =>
+      Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24));
+    const dayPassed = calcDaysPassed(new Date(), date);
+    if (dayPassed === 0) return "Today";
+    if (dayPassed === 1) return "Yesterday";
+    if (dayPassed <= 7) return `${dayPassed} days ago`;
+    else {
+      // const now = new Date(date);
+      // const day = `${now.getDay()}`.padStart(2, 0);
+      // const month = `${now.getMonth() + 1}`.padStart(2, 0);
+      // const year = now.getFullYear();
+      // return `${day}/${month}/${year}`;
+
+      return new Intl.DateTimeFormat().format(date);
+    }
+  };
+
   const displayMovements = (acc) => {
     const movs = isSort
       ? [...acc.movements].sort((a, b) => a - b)
@@ -98,11 +116,15 @@ function App() {
       const type = mov > 0 ? "deposit" : "withdrawal";
 
       // Display date
-      const now = new Date(acc.movementsDates[i]);
-      const day = `${now.getDay()}`.padStart(2, 0);
-      const month = `${now.getMonth() + 1}`.padStart(2, 0);
-      const year = now.getFullYear();
-      const displayDate = `${day}/${month}/${year}`;
+      const displayDate = formateDate(new Date(acc.movementsDates[i]));
+
+      // Formate balance
+      const formatBalance = () => {
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(mov);
+      };
 
       return (
         <div
@@ -116,7 +138,7 @@ function App() {
             {`${i + 1} ${type}`}
           </div>
           <div className="movements__date">{displayDate}</div>
-          <div className="movements__value">{mov.toFixed(2)}€</div>
+          <div className="movements__value">{formatBalance()}</div>
         </div>
       );
     });
@@ -124,6 +146,10 @@ function App() {
 
   const calcBalance = (acc) => {
     const balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
+    const formatBalance = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(balance);
     acc.balance = balance;
     return (
       <p
@@ -132,7 +158,7 @@ function App() {
           setChangeColor(!changeColor);
         }}
       >
-        {balance.toFixed(2)}€
+        {formatBalance}
       </p>
     );
   };
@@ -141,12 +167,20 @@ function App() {
     const calcIncomes = acc.movements
       .filter((mov) => mov > 0)
       .reduce((acc, mov) => acc + mov, 0);
-    setIncomes(calcIncomes.toFixed(2));
+    const formateCalcIncomes = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(calcIncomes);
+    setIncomes(formateCalcIncomes);
 
     const calcOutcomes = Math.abs(
       acc.movements.filter((mov) => mov < 0).reduce((acc, mov) => acc + mov, 0)
     );
-    setOutcomes(calcOutcomes.toFixed(2));
+    const formateCalcOutcomes = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(calcOutcomes);
+    setOutcomes(formateCalcOutcomes);
 
     const calcInterest = acc.movements
       .filter((mov) => mov > 0)
@@ -155,7 +189,11 @@ function App() {
         return int >= 1;
       })
       .reduce((acc, int) => acc + int, 0);
-    setInterest(calcInterest.toFixed(2));
+    const formateCalcInterst = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(calcInterest);
+    setInterest(formateCalcInterst);
   };
 
   // useEffect(() => {
@@ -275,13 +313,23 @@ function App() {
 
   const dateHandler = () => {
     const now = new Date();
-    const day = `${now.getDay()}`.padStart(2, 0);
-    const month = `${now.getMonth() + 1}`.padStart(2, 0);
-    const year = now.getFullYear();
-    const hour = now.getHours();
-    const min = now.getMinutes();
-    const date = `${day}/${month}/${year}, ${hour}:${min}`;
-    return <span className="balance__date">{date}</span>;
+    // const day = `${now.getDay()}`.padStart(2, 0);
+    // const month = `${now.getMonth() + 1}`.padStart(2, 0);
+    // const year = now.getFullYear();
+    // const hour = now.getHours();
+    // const min = now.getMinutes();
+    // const date = `${day}/${month}/${year}, ${hour}:${min}`;
+    // return <span className="balance__date">{date}</span>;
+
+    const options = {
+      hour: "numeric",
+      minute: "numeric",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "long",
+    };
+    return new Intl.DateTimeFormat("en-US", options).format(now);
   };
 
   return (
@@ -322,11 +370,11 @@ function App() {
         )}
         <div className="summary">
           <p className="summary__label">In</p>
-          <p className="summary__value summary__value--in">{`${incomes}€`}</p>
+          <p className="summary__value summary__value--in">{`${incomes}`}</p>
           <p className="summary__label">Out</p>
-          <p className="summary__value summary__value--out">{`${outcomes}€`}</p>
+          <p className="summary__value summary__value--out">{`${outcomes}`}</p>
           <p className="summary__label">Interest</p>
-          <p className="summary__value summary__value--interest">{`${interest}€`}</p>
+          <p className="summary__value summary__value--interest">{`${interest}`}</p>
           <button className="btn--sort" onClick={(e) => sorting(e)}>
             &darr; SORT
           </button>
