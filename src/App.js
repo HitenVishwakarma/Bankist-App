@@ -67,7 +67,7 @@ function App() {
   const transferAmountRef = useRef();
   const transferToRef = useRef();
   const [isSort, setIsSort] = useState(false);
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(120);
   const [changeColor, setChangeColor] = useState(false);
 
   useEffect(() => {
@@ -196,11 +196,6 @@ function App() {
     setInterest(formateCalcInterst);
   };
 
-  // useEffect(() => {
-  //   setcurrentUserAccount(account1);
-  //   setIsLoggedIn(true);
-  // }, []);
-
   const formSubmitHandler = (e) => {
     e?.preventDefault();
     const userName = userNameRef.current.value;
@@ -211,6 +206,9 @@ function App() {
       // Display UI and Message
       setMessage(`Welcome back, ${validateUser.owner}`);
       setIsLoggedIn(true);
+
+      // Timer counter
+      countDownTimerHandler();
     }
     userNameRef.current.value = "";
     userPwdRef.current.value = "";
@@ -284,28 +282,26 @@ function App() {
     displayMovements(currentUserAccount);
   };
 
-  useEffect(() => {
-    let start = null;
-    start = setInterval(() => {
-      setTime((second) => second + 10);
-    }, 10);
-    return () => clearInterval(start);
-  }, [time]);
-
-  useEffect(() => {
-    const timeLimit = 10;
-    if (time >= timeLimit) {
-      setTime(0);
-    }
-  }, [time]);
+  const countDownTimerHandler = () => {
+    let timer = time;
+    const clearTimer = setInterval(() => {
+      if (timer === 0) {
+        setTime(120);
+        setIsLoggedIn(false);
+        setMessage("Log in to get started");
+        return clearInterval(clearTimer);
+      }
+      setTime(timer--);
+    }, 100);
+  };
 
   const timer = () => {
     return (
       <p className="logout-timer">
         You will be logged out in{" "}
         <span className="logout-timer">
-          <span>{("0" + Math.floor((time / 60000) % 60)).slice(-2)}m:</span>
-          <span>{("0" + Math.floor((time / 1000) % 60)).slice(-2)}s:</span>
+          <span>{String(Math.trunc(time / 60)).padStart(2, 0)}m:</span>
+          <span>{String(time % 60).padStart(2, 0)}s:</span>
         </span>
       </p>
     );
